@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"time"
 
 	flags "github.com/jessevdk/go-flags"
@@ -37,11 +38,18 @@ func startClient() {
 		log.Println("Established ", count)
 	}()
 
+	var wg sync.WaitGroup
+	defer wg.Wait()
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
 	for {
-		conn, err := net.Dial("tcp", opts.Address)
+		conn, err := dialer.Dial("tcp", opts.Address)
 		if err != nil {
-			log.Fatalln("Error dialing: ", err)
+			c <- os.Interrupt
+			fmt.Println()
+			log.Println("Error dialing: ", err)
+			return
 		}
+		wg.Add(1)
 		count++
 		fmt.Print(".")
 
@@ -52,6 +60,7 @@ func startClient() {
 
 		go func(conn net.Conn) {
 			defer conn.Close()
+			defer wg.Done()
 
 			ticker := time.NewTicker(time.Second * 5)
 			for {
