@@ -122,13 +122,16 @@ func startServer() {
 				}
 
 				received := string(buf[:reqLen])
-				switch received {
-				case "ping\n":
-					conn.Write([]byte("pong\n"))
-				case "close\n":
-					return
-				default:
-					log.Println("Unknown command: ", received)
+				commands := strings.Split(received, "\n")
+				for _, command := range commands {
+					switch command {
+					case "ping\n":
+						conn.Write([]byte("pong\n"))
+					case "close\n":
+						return
+					default:
+						log.Println("Unknown command: ", received)
+					}
 				}
 			}
 		}(conn)
@@ -136,9 +139,13 @@ func startServer() {
 }
 
 func main() {
-	_, err := flags.Parse(&opts)
+	args, err := flags.Parse(&opts)
 	if err != nil {
 		os.Exit(-1)
+	}
+
+	if len(args) == 1 {
+		opts.Address = args[0]
 	}
 
 	if opts.ServerMode {
