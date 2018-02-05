@@ -16,6 +16,7 @@ import (
 var opts struct {
 	ServerMode bool   `short:"s" long:"server" description:"Run the application in server mode"`
 	Address    string `short:"a" long:"address" description:"Listen address for the server (default 0.0.0.0:3210), or connection endpoint for client (default localhost:3210)" default:":3210"`
+	Timeout    int    `short:"t" long:"timeout" description:"Timeout for the connection in seconds" default:"10"`
 }
 
 func startClient() {
@@ -45,7 +46,7 @@ func startClient() {
 
 	var wg sync.WaitGroup
 	defer wg.Wait()
-	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	dialer := &net.Dialer{Timeout: time.Duration(opts.Timeout) * time.Second}
 	for {
 		conn, err := dialer.Dial("tcp", address)
 		if err != nil {
