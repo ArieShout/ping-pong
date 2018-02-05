@@ -14,12 +14,17 @@ import (
 )
 
 var opts struct {
-	Mode    string `short:"m" long:"mode" description:"Run mode" default:"server" choice:"client" choice:"server"`
-	Address string `short:"a" long:"address" description:"Listen address for the server, or connection endpoint for client" default:"localhost:3210"`
+	ServerMode bool   `short:"s" long:"server" description:"Run the application in server mode"`
+	Address    string `short:"a" long:"address" description:"Listen address for the server (default 0.0.0.0:3210), or connection endpoint for client (default localhost:3210)" default:":3210"`
 }
 
 func startClient() {
 	var frequency int64 = 1000
+
+	address := opts.Address
+	if strings.HasPrefix(address, ":") {
+		address = "localhost" + address
+	}
 
 	var interval = time.Duration(int64(time.Second) / frequency)
 	var closeChan = make(chan struct{})
@@ -42,7 +47,7 @@ func startClient() {
 	defer wg.Wait()
 	dialer := &net.Dialer{Timeout: 10 * time.Second}
 	for {
-		conn, err := dialer.Dial("tcp", opts.Address)
+		conn, err := dialer.Dial("tcp", address)
 		if err != nil {
 			c <- os.Interrupt
 			fmt.Println()
@@ -136,9 +141,9 @@ func main() {
 		os.Exit(-1)
 	}
 
-	if opts.Mode == "client" {
-		startClient()
-	} else {
+	if opts.ServerMode {
 		startServer()
+	} else {
+		startClient()
 	}
 }
